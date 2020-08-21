@@ -1,20 +1,19 @@
-- name: Create an instance
+- name: Create instance
   hosts: localhost
   gather_facts: false
   connection: local
   vars:
     gcp_project: round-plating-286915
     gcp_cred_kind: serviceaccount
-    gcp_cred_file: /Users/michaelschmidt/git/techchallenge/round-plating-286915-49944854916b.json
+    gcp_cred_file: /Users/michaelschmidt/git/kiratech-techchallenge/round-plating-286915-49944854916b.json
     zone: "us-central1-b"
     region: "us-central1"
-    image: "https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-9-stretch-v20180911"
-
+    image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
   tasks:
     - name: create a disk
       gcp_compute_disk:
         name: 'disk-instance'
-        size_gb: 50
+        size_gb: 10
         source_image: "{{ image }}"
         zone: "{{ zone }}"
         project: "{{ gcp_project }}"
@@ -24,7 +23,7 @@
           - https://www.googleapis.com/auth/compute
         state: present
       register: disk
-    - name: create a network
+    - name: create network
       gcp_compute_network:
         name: 'default'
         project: "{{ gcp_project }}"
@@ -45,11 +44,11 @@
           - https://www.googleapis.com/auth/compute
         state: present
       register: address
-    - name: create a instance
+    - name: create instance
       gcp_compute_instance:
         state: present
         name: test-vm
-        machine_type: n1-standard-1
+        machine_type: f1-micro
         disks:
           - auto_delete: true
             boot: true
@@ -67,3 +66,31 @@
         scopes:
           - https://www.googleapis.com/auth/compute
       register: instance
+    - name: Wait for SSH to come up
+      wait_for: host={{ address.address }} port=22 delay=1 timeout=60
+    - name: Add host to groupname
+      add_host: hostname={{ address.address }} groupname=new_instances
+#    - name: Give them the key
+      #connection: ssh
+#      authorized_key:
+#        user: michaelschmidt
+#        state: present
+#        key: "{{ lookup('file', '/Users/michaelschmidt/git/kiratech-techchallenge/id_rsa.pub') }}"
+
+- name: install software
+  hosts: new_instances
+  become: true
+  connection: ssh
+  tasks:
+    - name: install apt_repository
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: add apt_repository
+      apt_repository: repo='deb https://download.docker.com/linux/ubuntu bionic stable' state=present
+
+    - name: install docker
+      apt: name=docker-ce update_cache=yes
+
+    - service: name=docker state=restarted
