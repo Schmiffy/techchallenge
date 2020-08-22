@@ -58,7 +58,7 @@
     - name: create instance
       gcp_compute_instance:
         state: present
-        name: test-vm
+        name: test-vm-a,test-vm-b
         machine_type: f1-micro
         disks:
           - auto_delete: true
@@ -78,7 +78,7 @@
           - https://www.googleapis.com/auth/compute
       register: instance
     - name: Wait for SSH to come up
-      wait_for: host={{ address.address }} port=22 delay=1 timeout=60
+      wait_for: host={{ address.address }} port=22 delay=10 timeout=60
     - name: Add host to groupname
       add_host: hostname={{ address.address }} groupname=new_instances
 #    - name: Give them the key
@@ -90,18 +90,87 @@
 
 - name: install software
   hosts: new_instances
+  tags: 
+    - configuration
   become: true
   connection: ssh
+  environment:
+    DOCKER_HOST: tcp://0.0.0.0:2375
   tasks:
-    - name: install apt_repository
+    - name: install packages required by docker
+      become: true
+      apt:
+        update_cache: yes
+        state: latest
+        name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gpg-agent
+        - software-properties-common
+
+    - name: add docker GPG key
+      become: true
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
-    - name: add apt_repository
-      apt_repository: repo='deb https://download.docker.com/linux/ubuntu bionic stable' state=present
+    - name: add docker apt repo
+      become: true
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: install python dependencies
+      become: true
+      apt:
+        update_cache: yes
+        state: latest
+        name: python3-pip
+
+    - name: install 'Docker SDK for Python'
+      #become: true               <--- DO NOT DO THIS!!!
+      pip:
+        name: docker
 
     - name: install docker
-      apt: name=docker-ce update_cache=yes
+      become: true
+      apt:
+        update_cache: yes
+        state: latest
+        name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
 
+    - name: add daemon.json config file
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+        follow: yes
+    - name: Create directory 
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        mode: '0755'
+    - name: add docker.conf config file
+      copy:
+        src: docker.conf
+        dest: /etc/systemd/system/docker.service.d/docker.conf
+        follow: yes
+
+    - name: read config
+      systemd:
+        daemon_reload: yes
     - service: name=docker state=restarted
+
+
+# Wanted to use this but it didnt work
+#    - name: change docker host 
+#      docker_config:
+#        name: docker_host
+#        data: your ad here
+#        force: True
+#        docker_host: tcp://0.0.0.0:2375
+#        state: present
+#        tls: True
