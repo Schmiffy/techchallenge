@@ -5,8 +5,6 @@
     - gce-instance
   gather_facts: false
   connection: local
-  roles:
-    - gce-instance
   vars:
     gcp_project: round-plating-286915
     gcp_cred_kind: serviceaccount
@@ -15,22 +13,71 @@
     region: "us-central1"
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
     vm_name: manager
-
+  tasks:
+    - set_fact:
+        manager_node: "{{ host_ip }}"
+    - name: Add host to groupname
+      add_host: hostname={{ address.address }} groupname=manager
 
 - name: set up Swarm Manager
-  hosts: swarm_instances
+  hosts: manager
   roles:
     - docker
   become: true
   connection: ssh
+  vars:
+    ip_adress: "{{ hostvars['localhost']['manager_node'] }}"
   tasks:
-    - name: Init a new swarm with default parameters
+    - debug:       
+        msg: "{{ ip_adress }}"
+    - set_fact:
+        advertise_addr: "{{ ip_adress }}"
+    - name: Create a new swarm
       docker_swarm:
         state: present
-        advertise_addr: "{{ hostvars['localhost']['host_ip'] }}"
+        advertise_addr: "{{ ip_adress }}"
       register: swarm
     - set_fact:
         register_key: "{{ swarm.swarm_facts.JoinTokens.Worker }}"
     - debug:       
         msg: "{{ register_key }}"
+
+
+- name: Create Manager instance
+  hosts: localhost
+  roles:
+    - gce-instance
+  gather_facts: false
+  connection: local
+  vars:
+    gcp_project: round-plating-286915
+    gcp_cred_kind: serviceaccount
+    gcp_cred_file: /Users/michaelschmidt/git/kiratech-techchallenge/round-plating-286915-49944854916b.json
+    zone: "us-central1-b"
+    region: "us-central1"
+    image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
+    vm_name: worker
+  tasks:
+    - set_fact:
+        worker_node: "{{ host_ip }}"
+    - name: Add host to groupname
+      add_host: hostname={{ address.address }} groupname=worker_node
+
+- name: set up Swarm Worker
+  hosts: worker_node
+  roles:
+    - docker
+  become: true
+  connection: ssh
+  vars:
+    register_key: "{{ hostvars['35.188.116.103'].register_key }}"
+    ip_adress: "{{ hostvars['35.188.116.103'].advertise_addr }}"
+  tasks:
+
+    - name: Add Swarm node
+      docker_swarm:
+        state: join
+        advertise_addr: "34.66.251.19"
+        join_token: "{{ register_key }}"
+        remote_addrs: [ "{{ ip_adress }}:2377" ]
 
