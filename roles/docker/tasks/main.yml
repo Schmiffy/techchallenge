@@ -53,6 +53,8 @@
     src: daemon.json
     dest: /etc/docker/daemon.json
     follow: yes
+    mode: '0644'
+
 - name: Create directory
   file:
     path: /etc/systemd/system/docker.service.d
@@ -72,6 +74,8 @@
     src: docker.conf
     dest: /etc/systemd/system/docker.service.d/docker.conf
     follow: yes
+    mode: '0644'
+
 
 - name: read config
   systemd:

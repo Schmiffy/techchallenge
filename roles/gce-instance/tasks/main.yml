@@ -70,5 +70,6 @@
   register: instance
 - name: Wait for SSH to come up
   wait_for: host={{ address.address }} port=22 delay=10 timeout=60
-- set_fact:
+- name: set host ip
+  set_fact:
     host_ip: "{{ address.address }}"
