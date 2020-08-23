@@ -29,7 +29,7 @@
   vars:
     ip_adress: "{{ hostvars['localhost']['manager_node'] }}"
   tasks:
-    - debug:       
+    - debug:
         msg: "{{ ip_adress }}"
     - name: set advertise_addr
       set_fact:
@@ -42,7 +42,7 @@
     - name: set register_key
       set_fact:
         register_key: "{{ swarm.swarm_facts.JoinTokens.Worker }}"
-    - debug:       
+    - debug:
         msg: "{{ register_key }}"
 
 
