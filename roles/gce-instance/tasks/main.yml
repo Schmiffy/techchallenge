@@ -1,5 +1,5 @@
 ---
-# tasks file for gce-instance
+# tasks file for gceinstance
 - name: create a disk
   gcp_compute_disk:
     name: "{{ vm_name }}"
