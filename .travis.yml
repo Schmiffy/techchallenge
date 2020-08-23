@@ -1,7 +1,6 @@
 language: python
-python:
-- "3.6"
-
-# command to run tests
+install:
+  - pip install ansible-lint
+  - ansible-lint --version
 script:
-- ansible-lint *.yml -v
+  - ansible-lint *.yml
