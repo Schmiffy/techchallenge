@@ -14,7 +14,8 @@
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
     vm_name: manager
   tasks:
-    - set_fact:
+    - name: set node ip
+      set_fact:
         manager_node: "{{ host_ip }}"
     - name: Add host to groupname
       add_host: hostname={{ address.address }} groupname=manager
@@ -30,14 +31,16 @@
   tasks:
     - debug:       
         msg: "{{ ip_adress }}"
-    - set_fact:
+    - name: set advertise_addr
+      set_fact:
         advertise_addr: "{{ ip_adress }}"
     - name: Create a new swarm
       docker_swarm:
         state: present
         advertise_addr: "{{ ip_adress }}"
       register: swarm
-    - set_fact:
+    - name: set register_key
+      set_fact:
         register_key: "{{ swarm.swarm_facts.JoinTokens.Worker }}"
     - debug:       
         msg: "{{ register_key }}"
@@ -58,7 +61,8 @@
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
     vm_name: worker
   tasks:
-    - set_fact:
+    - name: set node ip
+      set_fact:
         worker_node: "{{ host_ip }}"
     - name: Add host to groupname
       add_host: hostname={{ address.address }} groupname=worker_node
