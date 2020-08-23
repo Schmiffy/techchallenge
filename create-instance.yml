@@ -46,7 +46,7 @@
         msg: "{{ register_key }}"
 
 
-- name: Create Manager instance
+- name: Create Worker instance
   hosts: localhost
   roles:
     - gceinstance
