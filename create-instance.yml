@@ -1,8 +1,12 @@
 ---
-- name: Create instance
+- name: Create Manager instance
   hosts: localhost
+  roles:
+    - gce-instance
   gather_facts: false
   connection: local
+  roles:
+    - gce-instance
   vars:
     gcp_project: round-plating-286915
     gcp_cred_kind: serviceaccount
@@ -10,93 +14,15 @@
     zone: "us-central1-b"
     region: "us-central1"
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
-  tasks:
-    - name: create a disk
-      gcp_compute_disk:
-        name: 'disk-instance'
-        size_gb: 10
-        source_image: "{{ image }}"
-        zone: "{{ zone }}"
-        project: "{{ gcp_project }}"
-        auth_kind: "{{ gcp_cred_kind }}"
-        service_account_file: "{{ gcp_cred_file }}"
-        scopes:
-          - https://www.googleapis.com/auth/compute
-        state: present
-      register: disk
-    - name: create network
-      gcp_compute_network:
-        name: 'default'
-        project: "{{ gcp_project }}"
-        auth_kind: "{{ gcp_cred_kind }}"
-        service_account_file: "{{ gcp_cred_file }}"
-        scopes:
-          - https://www.googleapis.com/auth/compute
-        state: present
-      register: network
-    - name: create a address
-      gcp_compute_address:
-        name: 'address-instance'
-        region: "{{ region }}"
-        project: "{{ gcp_project }}"
-        auth_kind: "{{ gcp_cred_kind }}"
-        service_account_file: "{{ gcp_cred_file }}"
-        scopes:
-          - https://www.googleapis.com/auth/compute
-        state: present
-      register: address
-    - name: open firewall
-      gcp_compute_firewall:
-        name: docker-port
-        allowed:
-        - ip_protocol: tcp
-          ports:
-          - '2375'
-        project: "{{ gcp_project }}"
-        auth_kind: "{{ gcp_cred_kind }}"
-        service_account_file: "{{ gcp_cred_file }}"
-        state: present
-    - name: create instance
-      gcp_compute_instance:
-        state: present
-        name: test-vm-1
-        machine_type: f1-micro
-        disks:
-          - auto_delete: true
-            boot: true
-            source: "{{ disk }}"
-        network_interfaces:
-          - network: "{{ network }}"
-            access_configs:
-              - name: 'External NAT'
-                nat_ip: "{{ address }}"
-                type: 'ONE_TO_ONE_NAT'
-        zone: "{{ zone }}"
-        project: "{{ gcp_project }}"
-        auth_kind: "{{ gcp_cred_kind }}"
-        service_account_file: "{{ gcp_cred_file }}"
-        scopes:
-          - https://www.googleapis.com/auth/compute
-      register: instance
-    - name: Wait for SSH to come up
-      wait_for: host={{ address.address }} port=22 delay=10 timeout=60
-    - name: Add host to groupname
-      add_host: hostname={{ address.address }} groupname=new_instances
-    - set_fact:
-        host_ip: "{{ address.address }}"
-#    - name: Give them the key
-      #connection: ssh
-#      authorized_key:
-#        user: michaelschmidt
-#        state: present
-#        key: "{{ lookup('file', '/Users/michaelschmidt/git/kiratech-techchallenge/id_rsa.pub') }}"
+    vm_name: manager
 
-- hosts: new_instances
-  
-  become: true
-  connection: ssh
+
+- name: set up Swarm Manager
+  hosts: swarm_instances
   roles:
     - docker
+  become: true
+  connection: ssh
   tasks:
     - name: Init a new swarm with default parameters
       docker_swarm:
