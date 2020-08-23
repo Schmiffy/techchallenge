@@ -2,7 +2,7 @@
 - name: Create Manager instance
   hosts: localhost
   roles:
-    - gce-instance
+    - gceinstance
   gather_facts: false
   connection: local
   vars:
@@ -49,7 +49,7 @@
 - name: Create Manager instance
   hosts: localhost
   roles:
-    - gce-instance
+    - gceinstance
   gather_facts: false
   connection: local
   vars:
