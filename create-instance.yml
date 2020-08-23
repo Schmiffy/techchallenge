@@ -91,13 +91,13 @@
 #        state: present
 #        key: "{{ lookup('file', '/Users/michaelschmidt/git/kiratech-techchallenge/id_rsa.pub') }}"
 
-- name: install software
-  hosts: new_instances
-  role:
-    - docker
+- hosts: new_instances
+  
   become: true
   connection: ssh
-
+  roles:
+    - docker
+  tasks:
     - name: Init a new swarm with default parameters
       docker_swarm:
         state: present
