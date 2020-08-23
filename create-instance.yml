@@ -1,3 +1,4 @@
+---
 - name: Create instance
   hosts: localhost
   gather_facts: false
@@ -58,7 +59,7 @@
     - name: create instance
       gcp_compute_instance:
         state: present
-        name: test-vm-a,test-vm-b
+        name: test-vm-1
         machine_type: f1-micro
         disks:
           - auto_delete: true
@@ -81,6 +82,8 @@
       wait_for: host={{ address.address }} port=22 delay=10 timeout=60
     - name: Add host to groupname
       add_host: hostname={{ address.address }} groupname=new_instances
+    - set_fact:
+        host_ip: "{{ address.address }}"
 #    - name: Give them the key
       #connection: ssh
 #      authorized_key:
@@ -94,8 +97,6 @@
     - configuration
   become: true
   connection: ssh
-  environment:
-    DOCKER_HOST: tcp://0.0.0.0:2375
   tasks:
     - name: install packages required by docker
       become: true
@@ -129,7 +130,6 @@
         name: python3-pip
 
     - name: install 'Docker SDK for Python'
-      #become: true               <--- DO NOT DO THIS!!!
       pip:
         name: docker
 
@@ -142,6 +142,9 @@
         - docker-ce
         - docker-ce-cli
         - containerd.io
+        - apt-transport-https 
+        - software-properties-common 
+        - ca-certificates
 
     - name: add daemon.json config file
       copy:
@@ -153,18 +156,6 @@
         path: /etc/systemd/system/docker.service.d
         state: directory
         mode: '0755'
-    - name: add docker.conf config file
-      copy:
-        src: docker.conf
-        dest: /etc/systemd/system/docker.service.d/docker.conf
-        follow: yes
-
-    - name: read config
-      systemd:
-        daemon_reload: yes
-    - service: name=docker state=restarted
-
-
 # Wanted to use this but it didnt work
 #    - name: change docker host 
 #      docker_config:
@@ -174,3 +165,25 @@
 #        docker_host: tcp://0.0.0.0:2375
 #        state: present
 #        tls: True
+    - name: add docker.conf config file
+      copy:
+        src: docker.conf
+        dest: /etc/systemd/system/docker.service.d/docker.conf
+        follow: yes
+
+    - name: read config
+      systemd:
+        daemon_reload: yes
+    - name: run service
+      service: name=docker state=restarted
+
+    - name: Init a new swarm with default parameters
+      docker_swarm:
+        state: present
+        advertise_addr: "{{ hostvars['localhost']['host_ip'] }}"
+      register: swarm
+    - set_fact:
+        register_key: "{{ swarm.swarm_facts.JoinTokens.Worker }}"
+    - debug:       
+        msg: "{{ register_key }}"
+
