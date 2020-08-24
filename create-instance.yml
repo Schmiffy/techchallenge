@@ -8,7 +8,7 @@
   vars:
     gcp_project: round-plating-286915
     gcp_cred_kind: serviceaccount
-    gcp_cred_file: /Users/michaelschmidt/git/kiratech-techchallenge/round-plating-286915-49944854916b.json
+    gcp_cred_file: /Users/michaelschmidt/git/techchallenge/round-plating-286915-49944854916b.json
     zone: "us-central1-b"
     region: "us-central1"
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
@@ -55,7 +55,7 @@
   vars:
     gcp_project: round-plating-286915
     gcp_cred_kind: serviceaccount
-    gcp_cred_file: /Users/michaelschmidt/git/kiratech-techchallenge/round-plating-286915-49944854916b.json
+    gcp_cred_file: /Users/michaelschmidt/git/techchallenge/round-plating-286915-49944854916b.json
     zone: "us-central1-b"
     region: "us-central1"
     image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts"
