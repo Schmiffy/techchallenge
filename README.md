@@ -1,1 +1,1 @@
-# kiratech-techchallenge
+# techchallenge
